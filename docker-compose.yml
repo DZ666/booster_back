@@ -1,0 +1,52 @@
+version: '3.7'
+services:
+
+  mongodb:
+    image: mongo:5
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    environment:
+      - TZ=Europe/Moscow
+      - MONGO_INITDB_ROOT_USERNAME=USjKWJNi
+      - MONGO_INITDB_ROOT_PASSWORD=SADIUJNWKmnKJSDHIAU
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 3s
+      timeout: 12s
+      retries: 3
+      start_period: 2s
+    volumes:
+      - ./mongo-init/:/docker-entrypoint-initdb.d/:ro
+      - ./booster_db_mongo:/data/db
+    restart: ${RESTART_POLICY}
+
+  booster:
+    image: node:16
+    container_name: booster
+    ports:
+      - ${PORT}:${PORT}
+    environment:
+      - PORT=${PORT}
+      - NODE_ENV=${NODE_ENV}
+      - IS_TEST=${IS_TEST}
+      - TZ=Europe/Moscow
+    volumes:
+      - ./services/booster:/home/service
+    command:
+      - /bin/bash
+      - -c
+      - |
+        cd /home/service
+        sleep 5
+        npm run start:${START_ENV}
+    healthcheck:
+      test: curl --fail http://localhost:${PORT} || exit 1
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 2s
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    restart: ${RESTART_POLICY}
