@@ -1,0 +1,43 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+directive @upper on FIELD_DEFINITION
+
+type UserSignUp {
+  status: String
+  message: String
+}
+
+type UserSignIn {
+  access_token: String!
+  token_type: String!
+  expires_in: String!
+}
+
+type GetUserData {
+  email: String
+  name: String
+}
+
+input UserSignUpInput {
+  status: String
+  message: String
+}
+
+input UserSignInInput {
+  access_token: String!
+  token_type: String!
+  expires_in: String!
+}
+
+input GetUserDataQuery {
+  email: String
+  name: String
+}
+
+type Query {
+  userSignUp(email: String!, pwd: String!, name: String!): UserSignUp!
+  userSignIn(email: String!, pwd: String!): UserSignIn!
+  getUserData: GetUserData!
+}

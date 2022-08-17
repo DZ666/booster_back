@@ -1,0 +1,42 @@
+{
+  "name": "booster",
+  "version": "1.0.0",
+  "description": "Backend microservices",
+  "config": {
+    "services": "booster"
+  },
+  "scripts": {
+    "populate": "node populateFiles.js",
+    "install": "node allNpmRunner --commands i",
+    "clear": "rm -rf $(find -name node_modules -type d) && rm -rf $(find -name dist -type d)",
+    "update": "npm run clear && node allNpmRunner --commands update && npm i",
+    "build": "npm run populate && node allNpmRunner --commands run build",
+    "start:dev": "npm run populate && docker-compose --env-file ./.local.env up --remove-orphans $npm_package_config_services",
+    "start:dev:some": "npm run populate && docker-compose --env-file ./.local.env up --remove-orphans",
+    "start:stage": "docker-compose --env-file ./.stage.env up -d --remove-orphans $npm_package_config_services",
+    "start:prod": "docker-compose up -d --remove-orphans $npm_package_config_services",
+    "deploy:stage": "npm run down && npm i && npm run build && npm run start:stage",
+    "deploy:prod": "npm run down && npm i && npm run build && npm run start:prod",
+    "down": "docker-compose down",
+    "lint": "npm run populate && node allNpmRunner --commands run lint",
+    "test": "docker-compose up --abort-on-container-exit --exit-code-from tests tests",
+    "test:watch": "TEST_COMMAND=:watch npm run test",
+    "manage": "node manage.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@bitbucket.org/maxuto/api.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "homepage": "https://bitbucket.org/maxuto/api#readme",
+  "devDependencies": {
+    "@types/node": "^16.7.10",
+    "@types/prompt": "^1.1.1"
+  },
+  "dependencies": {
+    "ncp": "^2.0.0",
+    "prompt": "^1.2.0"
+  }
+}
