@@ -1,11 +1,9 @@
-import { forwardRef, Module, Scope } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
 import { JwtModule } from "@nestjs/jwt";
 import { UsersModule } from "../user/user.module";
-import { JwtAuthGuard } from "./guards/jwt-auth.guard";
+import { GqlAuthGuard } from "./guards/gql-auth.guard";
 import { AuthService } from "./services/auth.service";
-import { JwtStrategy } from "./strategies/jwt.strategy";
 import { LocalTokenStrategy } from "./strategies/local.strategy";
 
 @Module({
@@ -15,17 +13,12 @@ import { LocalTokenStrategy } from "./strategies/local.strategy";
       inject: [ConfigService],
       useFactory: async (confgiService: ConfigService) => ({
         secret: confgiService.get("JWT_SECRET"),
-        signOptions: { expiresIn: confgiService.get("AUTH_ACTIVE_FOR") },
+        // signOptions: { expiresIn: "2 days" },
       }),
     }),
     forwardRef(() => UsersModule),
   ],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    LocalTokenStrategy,
-    { provide: APP_GUARD, useClass: JwtAuthGuard, scope: Scope.REQUEST },
-  ],
-  exports: [AuthService],
+  providers: [AuthService, GqlAuthGuard, LocalTokenStrategy],
+  exports: [AuthService, GqlAuthGuard, JwtModule],
 })
 export class AuthModule {}

@@ -12,14 +12,11 @@ export class AuthService {
     return from(this.jwtService.signAsync({ user }));
   }
 
-  hashPassword(password: string): Observable<string> {
-    return from<string>(bcrypt.hash(password, 12));
+  hashPassword(pwd: string): Observable<string> {
+    return from<string>(bcrypt.hash(pwd, 12));
   }
 
-  comparePasswords(
-    password: string,
-    storedPasswordHash: string,
-  ): Observable<any> {
-    return from(bcrypt.compare(password, storedPasswordHash));
+  comparePwds(pwd: string, storedPwdHash: string): Observable<any> {
+    return from(bcrypt.compare(pwd, storedPwdHash));
   }
 }

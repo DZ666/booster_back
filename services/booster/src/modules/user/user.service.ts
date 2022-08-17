@@ -1,11 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { from, map, Observable, switchMap } from "rxjs";
+import { fail } from "src/tools/msTools";
 import { AuthService } from "../auth/services/auth.service";
-import CreateUserDto from "./dto/create-user.dto";
-import LoginUserDto from "./dto/login-user.dto";
-import IUser from "./interfaces/user";
+import { UserSignedUp } from "./interfaces/user";
 import { UserRepository } from "./repository/user.repository";
 import { UserDocument } from "./schemas/user.schema";
+import { UserSignIn } from "./user.model";
 
 @Injectable()
 export class UserService {
@@ -15,27 +15,26 @@ export class UserService {
   ) {}
 
   private validatePassword(
-    password: string,
-    storedPassword: string,
+    pwd: string,
+    storedPwd: string,
   ): Observable<boolean> {
-    return this.authService.comparePasswords(password, storedPassword);
+    return this.authService.comparePwds(pwd, storedPwd);
   }
 
-  public create(
-    createUserDto: CreateUserDto,
-  ): Observable<Omit<IUser, "password">> {
+  public create(createUserDto): Observable<UserSignedUp> {
     return this.mailExisting(createUserDto.email).pipe(
       switchMap((exists: boolean) => {
-        if (exists)
-          throw new HttpException("Email already in use", HttpStatus.CONFLICT);
+        if (exists) fail("Email already in use", HttpStatus.CONFLICT);
 
-        return this.authService.hashPassword(createUserDto.password).pipe(
+        return this.authService.hashPassword(createUserDto.pwd).pipe(
           switchMap((passwordHash: string) => {
-            createUserDto.password = passwordHash;
+            createUserDto.pwd = passwordHash;
             return from(this.userRepository.save(createUserDto)).pipe(
-              map((savedUser: IUser) => {
-                delete savedUser["password"];
-                return savedUser;
+              map(() => {
+                return {
+                  message: "Авторизация успешно завершена.",
+                  status: HttpStatus.OK,
+                };
               }),
             );
           }),
@@ -44,21 +43,21 @@ export class UserService {
     );
   }
 
-  public login({ email, password }: LoginUserDto): Observable<string> {
-    return this.userRepository.findUserByEmail(email, "email password").pipe(
+  public login({ email, pwd }): Observable<string> {
+    return this.userRepository.findUserByEmail(email, "email pwd").pipe(
       switchMap((user: UserDocument) => {
         if (!user)
           throw new HttpException("User is not found", HttpStatus.NOT_FOUND);
 
-        return this.validatePassword(password, user.password).pipe(
-          switchMap((passwordMatches: boolean) => {
-            if (!passwordMatches)
+        return this.validatePassword(pwd, user.pwd).pipe(
+          switchMap((pwdMatches: boolean) => {
+            if (!pwdMatches)
               throw new HttpException(
                 "Login was not successfull",
                 HttpStatus.UNAUTHORIZED,
               );
             return this.userRepository
-              .findUserByEmail(email, "-password")
+              .findUserByEmail(email, "-pwd")
               .pipe(
                 switchMap((user: UserDocument) =>
                   this.authService.generateJwt(user),
