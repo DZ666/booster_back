@@ -40,3 +40,4 @@ lerna-debug.log*
 envType.ts
 logs
 src/tools
+./schema.gql

@@ -1,6 +1,7 @@
-import { Field, InputType, ObjectType } from "@nestjs/graphql";
-import { IsDefined, IsString, IsNotEmpty } from "class-validator";
 import { HttpStatus } from "@nestjs/common";
+import { Field, InputType, ObjectType } from "@nestjs/graphql";
+import { IsDefined, IsNotEmpty, IsString } from "class-validator";
+import { UserWallet } from "./schemas/user-wallet.schema";
 
 @ObjectType()
 @InputType("UserSignUpInput")
@@ -38,14 +39,4 @@ export class UserSignIn {
   @IsNotEmpty()
   @Field(() => String)
   expires_in: string;
-}
-
-@ObjectType()
-@InputType("GetUserDataQuery")
-export class GetUserData {
-  @Field(() => String, { nullable: true })
-  email?: string;
-
-  @Field(() => String, { nullable: true })
-  name?: string;
 }

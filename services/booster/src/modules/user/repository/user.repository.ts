@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Document, Model } from "mongoose";
+import { Model } from "mongoose";
 import { from, Observable } from "rxjs";
 import IUser from "../interfaces/user";
-import UserSchema, { User, UserDocument } from "../schemas/user.schema";
+import { User, UserDocument } from "../schemas/user.schema";
 
 @Injectable()
 export class UserRepository {
