@@ -8,6 +8,8 @@ import validate from "./config/env.validation";
 import validationSchema, {
   validationOptions,
 } from "./config/validation.schema";
+import { CurrencyModule } from "./modules/currency/currency.module";
+import { ImportModule } from "./modules/import/import.module";
 import { UsersModule } from "./modules/user/user.module";
 import getEnvVars from "./tools/getEnvVars";
 import { upperDirectiveTransformer } from "./tools/upper-case.directive";
@@ -24,7 +26,12 @@ const { MONGO_DB_URL, MONGO_DB_NAME_BOOSTER } = getEnvVars();
       isGlobal: true,
     }),
     MongooseModule.forRoot(MONGO_DB_URL, { dbName: MONGO_DB_NAME_BOOSTER }),
+
+    // Modules
     UsersModule,
+    CurrencyModule,
+    ImportModule,
+
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: "schema.gql",

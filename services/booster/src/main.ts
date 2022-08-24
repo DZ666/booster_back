@@ -1,13 +1,12 @@
 import { NestFactory } from "@nestjs/core";
-import * as express from "express";
-import { join } from "path";
-import helmet from "helmet";
 import * as cookieParser from "cookie-parser";
+import * as express from "express";
+import helmet from "helmet";
+import { join } from "path";
 import * as requestIp from "request-ip";
 import { AppModule } from "./app.module";
-import getEnvVars from "./tools/getEnvVars";
-import { HttpExceptionFilter } from "./pipes/filters/exception.filter";
 import { ValidationErrorFilter } from "./pipes/filters/validation-error.filter";
+import getEnvVars from "./tools/getEnvVars";
 
 const { PORT, ORIGIN } = getEnvVars();
 
@@ -24,7 +23,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.useGlobalFilters(new HttpExceptionFilter(), new ValidationErrorFilter());
+  app.useGlobalFilters(new ValidationErrorFilter());
 
   await app.listen(PORT);
 }

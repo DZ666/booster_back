@@ -4,6 +4,28 @@
 
 directive @upper on FIELD_DEFINITION
 
+type Currency {
+  name: String
+  utilName: String
+  fetchDataUrl: String
+  main: Boolean
+}
+
+type UserWallet {
+  currency: Currency
+  name: String
+  userWallet: String
+  amountInUse: Float
+  amountNotInUse: Float
+}
+
+type User {
+  name: String
+  email: String
+  pwd: String
+  wallets: [UserWallet!]
+}
+
 type UserSignUp {
   status: String
   message: String
@@ -15,9 +37,26 @@ type UserSignIn {
   expires_in: String!
 }
 
-type GetUserData {
-  email: String
+input GetCurrencyQuery {
   name: String
+  utilName: String
+  fetchDataUrl: String
+  main: Boolean
+}
+
+input GetUserWalletsQuery {
+  currency: GetCurrencyQuery
+  name: String
+  userWallet: String
+  amountInUse: Float
+  amountNotInUse: Float
+}
+
+input GetUserDataQuery {
+  name: String
+  email: String
+  pwd: String
+  wallets: [GetUserWalletsQuery!]
 }
 
 input UserSignUpInput {
@@ -31,13 +70,8 @@ input UserSignInInput {
   expires_in: String!
 }
 
-input GetUserDataQuery {
-  email: String
-  name: String
-}
-
 type Query {
   userSignUp(email: String!, pwd: String!, name: String!): UserSignUp!
   userSignIn(email: String!, pwd: String!): UserSignIn!
-  getUserData: GetUserData!
+  getUserData: User!
 }

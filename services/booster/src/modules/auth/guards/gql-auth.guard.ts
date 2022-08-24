@@ -10,10 +10,14 @@ import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { GqlExecutionContext } from "@nestjs/graphql";
 import { JwtService } from "@nestjs/jwt";
-import { InjectConnection } from "@nestjs/mongoose";
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import { AuthGuard } from "@nestjs/passport";
-import { Connection, Types } from "mongoose";
-import { User } from "src/modules/user/schemas/user.schema";
+import { ObjectId } from "mongodb";
+import { Connection, Model, Types } from "mongoose";
+import UserSchema, {
+  User,
+  UserDocument,
+} from "src/modules/user/schemas/user.schema";
 import getEnvVars from "src/tools/getEnvVars";
 import { fail } from "src/tools/msTools";
 import { checkPermissions } from "../decorators/roles";
@@ -25,8 +29,7 @@ export const Public = () => SetMetadata(IS_PUBLIC_KEY, true),
   RequirePermission = permission =>
     SetMetadata(PERMISSION_REQUIRED, permission);
 
-const _ENV = getEnvVars(),
-  MS_PER_DAY = 24 * 60 * 60 * 1000; // hour * minutes * seconds * ms per s,
+const _ENV = getEnvVars();
 
 @Injectable()
 export class GqlAuthGuard extends AuthGuard("jwt") {
@@ -52,6 +55,8 @@ export class GqlAuthGuard extends AuthGuard("jwt") {
     private readonly jwtService: JwtService,
 
     private readonly configService: ConfigService,
+
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {
     super();
   }
@@ -76,7 +81,6 @@ export class GqlAuthGuard extends AuthGuard("jwt") {
     this.permission = await this.checkOverrides(context, PERMISSION_REQUIRED);
 
     this.jwt = this.req?.headers?.authorization?.replace("Bearer ", "") || "";
-    this.jwt_session = this.req?.cookies?.jwt_session || "";
 
     this.impersonationSession =
       this.req?.headers?.impersonationsession?.toString() || "";
@@ -85,17 +89,22 @@ export class GqlAuthGuard extends AuthGuard("jwt") {
   async authenticate() {
     if (!this.jwt) return;
     try {
-      const { _id }: User | any = await this.jwtService.verify(this.jwt, {
+      const {
+        user: { _id },
+      }: User | any = await this.jwtService.verify(this.jwt, {
         secret: this.configService.get("JWT_SECRET"),
       });
-      const dbUser: any = await this.conn.collection("users").findOne({ _id });
+      const dbUser: any = await this.userModel
+        .findOne({ _id: new ObjectId(_id) })
+        .populate("wallets.currency");
+
       if (dbUser) {
-        const { activeSessions, ...rest } = await dbUser;
+        const { activeSessions, ...rest } = await dbUser._doc;
+        delete rest["pwd"];
         this.activeSessions = await activeSessions;
         this.req.user = await { ...rest, token: this.jwt };
       }
     } catch (error) {
-      console.log(this);
       console.log(error);
     }
   }
@@ -109,51 +118,16 @@ export class GqlAuthGuard extends AuthGuard("jwt") {
       fail("no jwt token found", HttpStatus.UNAUTHORIZED);
     }
 
-    if (!this.jwt_session) {
-      fail("no active jwt session found", HttpStatus.UNAUTHORIZED);
-    }
-
     if (!this.req.user) {
       fail("not authenticated", HttpStatus.UNAUTHORIZED);
-    }
-
-    if (
-      !Array.isArray(this.activeSessions) ||
-      this.activeSessions.length === 0
-    ) {
-      this.res.clearCookie("jwt_session");
-      fail("no active session", HttpStatus.UNAUTHORIZED);
-    }
-
-    const dateNow = new Date();
-    const newActiveSessions = await this.activeSessions.filter(
-      session =>
-        session.lastActiveTime &&
-        +dateNow - session.lastActiveTime < +_ENV.AUTH_ACTIVE_FOR * MS_PER_DAY,
-    );
-
-    const { _id } = (await this.req.user) as any;
-
-    await this.conn.collection("users").updateOne(
-      { _id },
-      {
-        $set: {
-          activeSessions: newActiveSessions,
-        },
-      },
-    );
-
-    if (!newActiveSessions.some(obj => obj.sessionId === this.jwt_session)) {
-      this.res.clearCookie("jwt_session");
-      fail("Session wasn't found", HttpStatus.UNAUTHORIZED);
     }
 
     let user: any;
 
     if (this.impersonationId) {
-      user = await this.conn
-        .collection("users")
-        .findOne({ _id: new Types.ObjectId(this.impersonationId) });
+      user = await this.userModel
+        .findOne({ _id: new Types.ObjectId(this.impersonationId) })
+        .populate("*");
     }
 
     const permissions = await checkPermissions(

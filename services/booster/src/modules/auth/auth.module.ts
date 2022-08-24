@@ -1,6 +1,8 @@
 import { forwardRef, Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
+import { MongooseModule } from "@nestjs/mongoose";
+import UserSchema, { User } from "../user/schemas/user.schema";
 import { UsersModule } from "../user/user.module";
 import { GqlAuthGuard } from "./guards/gql-auth.guard";
 import { AuthService } from "./services/auth.service";
@@ -8,6 +10,7 @@ import { LocalTokenStrategy } from "./strategies/local.strategy";
 
 @Module({
   imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
